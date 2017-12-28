@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Список працівників</title>
+    <link href="lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
+    <script src="lib/jquery/dist/jquery.js"></script>
+</head>
+<body>
+    <h2>Список працівників</h2>
+    <form name="elmployerForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group">
+            <label for="name">Ім'я:</label>
+            <input class="form-control" name="name" />
+        </div>
+        <div class="form-group">
+            <label for="position">Посада:</label>
+            <input class="form-control" name="position" />
+        </div>
+        <div class="form-group">
+            <label for="salary">Заробітна плата:</label>
+            <input class="form-control" name="salary" />
+        </div>
+        <div class="panel-body">
+            <button type="submit" class="btn btn-sm btn-primary">Зберегти</button>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped table-bordered">
+        <thead><tr><th>Ід</th><th>Ім'я</th><th>Посада</th><th>Заробітна плата</th><th></th></tr></thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        function GetEmployers() {
+            $.ajax({
+                url: '/api/employers/',
+                type: 'GET',
+                contentType: "application/json",
+                success: function (employers) {
+                    var rows = "";
+                    $.each(employers, function (index, employer) {
+                        rows += row(employer);
+                    })
+                    $("table tbody").append(rows);
+                 }
+            });
+        }
+        function GetEmployer(id) {
+            $.ajax({
+                url: '/api/employers/'+id,
+                type: 'GET',
+                contentType: "application/json",
+                success: function (employer) {
+                    var form = document.forms["employerForm"];
+                    form.elements["id"].value = employer.id;
+                    form.elements["name"].value = employer.name;
+                    form.elements["position"].value = employer.position;
+                    form.elements["salary"].value = employer.salary;
+                }
+            });
+        }
+        function CreateEmployer(employerName, employerPosition, employerSalary) {
+            $.ajax({
+                url: "api/employers",
+                contentType: "application/json",
+                method: "POST",
+                data: JSON.stringify({
+                    name: employerName,
+                    position: employerPosition,
+                    salary: employerSalary
+                }),
+                success: function (employer) {
+                    reset();
+                    $("table tbody").append(row(employer));
+                }
+            })
+        }
+        function EditEmployer(employerId, employerName, employerPosition, employerSalary) {
+            $.ajax({
+                url: "api/employers",
+                contentType: "application/json",
+                method: "PUT",
+                data: JSON.stringify({
+                    id: employerId,
+                    name: employerName,
+                    position: employerPosition,
+                    salary: employerSalary
+
+                }),
+                success: function (employer) {
+                    reset();
+                    $("tr[data-rowid='" + employer.id + "']").replaceWith(row(employer));
+                }
+            })
+        }
+
+        
+        function DeleteEmployer(id) {
+            $.ajax({
+                url: "api/employers/"+id,
+                contentType: "application/json",
+                method: "DELETE",
+                success: function (employer) {
+                    $("tr[data-rowid='" + employer.id + "']").remove();
+                }
+            })
+        }
+        
+        var row = function (employer) {
+            return "<tr data-rowid='" + employer.id + "'><td>" + employer.id + "</td>" +
+                "<td>" + employer.name + "</td> <td>" + employer.position + "</td><td>" + employer.salary +
+                "<td><a class='editLink' data-id='" + employer.id + "'>Змінити</a> | " +
+                "<a class='removeLink' data-id='" + employer.id + "'>Видалити</a></td></tr>";
+        }
+         
+        $("form").submit(function (e) {
+            e.preventDefault();
+            var id = this.elements["id"].value;
+            var name = this.elements["name"].value;
+            var position = this.elements["position"].value;
+            var salary = this.elements["salary"].value;
+            if (id == 0)
+                CreateEmployer(name, position, salary);
+            else
+                EditEmployer(id, name, position, salary);
+        });
+
+    
+        $("body").on("click", ".editLink", function () {
+            var id = $(this).data("id");
+            GetEmployer(id);
+            
+        })
+     
+        $("body").on("click", ".removeLink", function () {
+            var id = $(this).data("id");
+            DeleteEmployer(id);
+        })
+
+     
+        GetEmployers();
+
+    </script>
+</body>
+</html>
